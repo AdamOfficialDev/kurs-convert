@@ -1,0 +1,1667 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FXConvert — Kurs Mata Uang Real-Time</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#06090F;
+  --surface:#0C1118;
+  --card:#101820;
+  --elevated:#162030;
+  --border:#1C2A3E;
+  --accent:#00E8A2;
+  --accent-dim:rgba(0,232,162,0.07);
+  --accent-mid:rgba(0,232,162,0.15);
+  --accent-border:rgba(0,232,162,0.22);
+  --accent-glow:rgba(0,232,162,0.35);
+  --blue:#4B9EFF;
+  --text-1:#EDF1FA;
+  --text-2:#7E92B0;
+  --text-3:#3D5070;
+  --danger:#FF4F6B;
+  --fd:'Space Grotesk',sans-serif;
+  --fb:'Inter',sans-serif;
+  --fm:'JetBrains Mono',monospace;
+  --r1:8px; --r2:14px; --r3:20px; --r4:28px;
+}
+
+html{font-size:16px;scroll-behavior:smooth}
+
+body{
+  background:var(--bg);
+  color:var(--text-1);
+  font-family:var(--fb);
+  min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;
+  padding:0 18px 100px;
+  overflow-x:hidden;
+  position:relative;
+}
+
+/* Ambient background blobs */
+.bg-blob{position:fixed;border-radius:50%;filter:blur(80px);pointer-events:none;z-index:0}
+.bg-blob-1{width:500px;height:400px;top:-80px;left:-100px;background:radial-gradient(ellipse,rgba(0,232,162,0.055) 0%,transparent 70%)}
+.bg-blob-2{width:400px;height:400px;bottom:-60px;right:-80px;background:radial-gradient(ellipse,rgba(75,158,255,0.04) 0%,transparent 70%)}
+.bg-grid{
+  position:fixed;inset:0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.013) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,0.013) 1px,transparent 1px);
+  background-size:52px 52px;
+  pointer-events:none;z-index:0;
+}
+
+.page{width:100%;max-width:740px;position:relative;z-index:1}
+
+/* ── HEADER ── */
+header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:26px 0 20px;
+  border-bottom:1px solid var(--border);
+  margin-bottom:28px;
+}
+
+.logo{display:flex;align-items:center;gap:12px;cursor:default}
+.logo-mark{
+  width:36px;height:36px;
+  border-radius:10px;
+  background:linear-gradient(135deg,rgba(0,232,162,0.15),rgba(0,232,162,0.04));
+  border:1px solid var(--accent-border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.1rem;
+  box-shadow:0 0 20px rgba(0,232,162,0.08);
+}
+.logo-name{
+  font-family:var(--fd);font-weight:700;font-size:1.15rem;letter-spacing:-0.025em;
+}
+.logo-name b{color:var(--accent);font-weight:700}
+
+.hdr-right{display:flex;align-items:center;gap:8px}
+
+.live-badge{
+  display:flex;align-items:center;gap:6px;
+  background:rgba(0,232,162,0.05);
+  border:1px solid var(--accent-border);
+  border-radius:100px;padding:5px 13px;
+  font-family:var(--fm);font-size:0.62rem;font-weight:600;
+  color:var(--accent);letter-spacing:0.09em;text-transform:uppercase;
+}
+.pulse{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--accent);box-shadow:0 0 8px var(--accent);
+  animation:pulse 2.2s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.45;transform:scale(0.7)}}
+
+.icon-btn{
+  width:34px;height:34px;border-radius:9px;
+  background:var(--elevated);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:var(--text-2);
+  transition:all 0.2s;flex-shrink:0;
+}
+.icon-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+.icon-btn.spin svg{animation:rot 0.75s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+/* ══════════════════════════════════
+   MAIN CARD
+══════════════════════════════════ */
+.main-card{
+  border-radius:var(--r4);
+  padding:2px; /* gradient border wrapper */
+  background:linear-gradient(145deg,rgba(0,232,162,0.14),rgba(28,40,62,0.6) 50%,rgba(75,158,255,0.08));
+  margin-bottom:14px;
+  position:relative;
+}
+.main-card-inner{
+  background:var(--card);
+  border-radius:calc(var(--r4) - 2px);
+  padding:26px;
+}
+
+/* ── AMOUNT INPUT ── */
+.input-section{margin-bottom:22px}
+
+.field-label{
+  font-size:0.65rem;font-weight:700;
+  color:var(--text-3);text-transform:uppercase;letter-spacing:0.12em;
+  margin-bottom:9px;display:flex;align-items:center;gap:6px;
+}
+.field-label::after{
+  content:'';flex:1;height:1px;background:var(--border);
+}
+
+.amount-field{
+  display:flex;align-items:center;
+  background:var(--elevated);
+  border:1.5px solid var(--border);
+  border-radius:var(--r2);
+  padding:0 16px;gap:8px;
+  transition:border-color 0.22s,box-shadow 0.22s;
+  position:relative;overflow:hidden;
+}
+.amount-field::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;
+  width:3px;background:var(--accent);border-radius:0 2px 2px 0;
+  opacity:0;transition:opacity 0.22s;
+}
+.amount-field:focus-within{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(0,232,162,0.07),0 2px 12px rgba(0,0,0,0.3);
+}
+.amount-field:focus-within::before{opacity:1}
+
+.amt-prefix{
+  font-family:var(--fm);font-size:1.4rem;color:var(--text-3);
+  user-select:none;flex-shrink:0;transition:color 0.2s;
+}
+.amount-field:focus-within .amt-prefix{color:var(--accent)}
+
+#amount-input{
+  background:none;border:none;outline:none;
+  color:var(--text-1);font-family:var(--fm);
+  font-size:2.1rem;font-weight:600;width:100%;
+  padding:17px 0;letter-spacing:-0.025em;
+}
+#amount-input::-webkit-inner-spin-button,
+#amount-input::-webkit-outer-spin-button{-webkit-appearance:none}
+#amount-input::placeholder{color:var(--text-3);opacity:0.6}
+
+.amt-clear{
+  background:none;border:none;width:28px;height:28px;
+  border-radius:7px;cursor:pointer;
+  display:none;align-items:center;justify-content:center;
+  color:var(--text-3);font-size:0.8rem;flex-shrink:0;
+  transition:all 0.15s;
+}
+.amt-clear:hover{background:var(--danger);color:#fff}
+.amt-clear.on{display:flex}
+
+/* ── CURRENCY PAIR ── */
+.pair-row{
+  display:grid;
+  grid-template-columns:1fr auto 1fr;
+  gap:10px;align-items:stretch;
+  margin-bottom:22px;
+}
+
+.cur-card{
+  background:var(--elevated);
+  border:1.5px solid var(--border);
+  border-radius:var(--r3);
+  padding:18px 16px 16px;
+  cursor:pointer;
+  transition:all 0.22s cubic-bezier(0.4,0,0.2,1);
+  display:flex;flex-direction:column;align-items:center;
+  gap:6px;position:relative;overflow:hidden;
+  user-select:none;
+}
+.cur-card::after{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 0%,rgba(0,232,162,0.07) 0%,transparent 70%);
+  opacity:0;transition:opacity 0.22s;
+}
+.cur-card:hover{
+  border-color:var(--accent);
+  transform:translateY(-2px);
+  box-shadow:0 8px 24px rgba(0,0,0,0.3),0 0 0 1px rgba(0,232,162,0.08);
+}
+.cur-card:hover::after{opacity:1}
+
+.cc-top{
+  width:100%;display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:4px;
+}
+.cc-lbl{
+  font-size:0.62rem;font-weight:700;color:var(--text-3);
+  text-transform:uppercase;letter-spacing:0.1em;
+}
+.cc-chevron{
+  color:var(--text-3);font-size:0.7rem;
+  transition:transform 0.2s;
+}
+.cur-card:hover .cc-chevron{color:var(--accent);transform:translateY(1px)}
+
+.cc-avatar{
+  width:60px;height:60px;border-radius:50%;
+  background:rgba(255,255,255,0.04);
+  border:1.5px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.8rem;line-height:1;
+  margin:6px 0;
+  position:relative;z-index:1;
+  transition:border-color 0.22s,box-shadow 0.22s;
+}
+.cur-card:hover .cc-avatar{
+  border-color:rgba(0,232,162,0.3);
+  box-shadow:0 0 16px rgba(0,232,162,0.12);
+}
+
+.cc-code{
+  font-family:var(--fd);font-weight:700;font-size:1.3rem;
+  letter-spacing:-0.015em;position:relative;z-index:1;
+}
+.cc-name{
+  font-size:0.68rem;color:var(--text-3);text-align:center;
+  position:relative;z-index:1;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  max-width:100%;
+}
+
+/* Swap zone */
+.swap-zone{
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:0;padding:0 2px;
+}
+.swap-line{
+  flex:1;width:1px;
+  background:linear-gradient(to bottom,transparent,var(--border));
+}
+.swap-line:last-child{
+  background:linear-gradient(to top,transparent,var(--border));
+}
+
+.swap-btn{
+  width:42px;height:42px;
+  border-radius:50%;
+  background:var(--card);
+  border:1.5px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:var(--text-2);
+  font-size:1rem;letter-spacing:-0.05em;
+  transition:all 0.28s cubic-bezier(0.4,0,0.2,1);
+  position:relative;flex-shrink:0;
+}
+.swap-btn:hover{
+  border-color:var(--accent);color:var(--accent);
+  background:var(--accent-dim);
+  transform:rotate(180deg) scale(1.05);
+  box-shadow:0 0 20px rgba(0,232,162,0.15);
+}
+
+/* ══════════════════════════════════
+   RESULT SECTION — THE HERO
+══════════════════════════════════ */
+.result-wrap{
+  position:relative;border-radius:var(--r3);overflow:hidden;
+}
+
+/* Animated glow border */
+.result-wrap::before{
+  content:'';position:absolute;inset:-1px;border-radius:var(--r3);
+  background:conic-gradient(
+    from var(--a,0deg),
+    transparent 20%,
+    rgba(0,232,162,0.4) 40%,
+    rgba(0,232,162,0.8) 50%,
+    rgba(0,232,162,0.4) 60%,
+    transparent 80%
+  );
+  z-index:0;
+  opacity:0;transition:opacity 0.5s;
+}
+.result-wrap.lit::before{
+  opacity:1;
+  animation:borderSpin 2.5s linear 1;
+}
+@property --a{syntax:'<angle>';inherits:false;initial-value:0deg}
+@keyframes borderSpin{
+  from{--a:0deg}
+  to{--a:360deg}
+}
+
+.result-inner{
+  background:linear-gradient(160deg,rgba(0,232,162,0.05) 0%,rgba(6,9,15,0.9) 60%,rgba(75,158,255,0.03) 100%);
+  border:1px solid rgba(0,232,162,0.18);
+  border-radius:var(--r3);
+  padding:28px 24px 22px;
+  text-align:center;
+  position:relative;z-index:1;
+  overflow:hidden;
+}
+
+/* Top shimmer line */
+.result-inner::before{
+  content:'';position:absolute;top:0;left:50%;
+  transform:translateX(-50%);
+  width:60%;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(0,232,162,0.55),transparent);
+}
+
+.res-from-label{
+  font-family:var(--fm);font-size:0.7rem;
+  color:var(--text-3);text-transform:uppercase;letter-spacing:0.08em;
+  margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.res-from-label .from-pill{
+  background:var(--elevated);border:1px solid var(--border);
+  border-radius:100px;padding:3px 10px;
+  font-size:0.68rem;color:var(--text-2);
+  font-family:var(--fm);
+}
+
+.res-output{
+  display:flex;align-items:flex-start;justify-content:center;
+  gap:8px;margin-bottom:6px;
+  flex-wrap:wrap;
+}
+.res-sym{
+  font-family:var(--fm);font-size:1.8rem;font-weight:500;
+  color:rgba(0,232,162,0.45);margin-top:8px;flex-shrink:0;
+}
+.res-num{
+  font-family:var(--fm);font-size:4rem;font-weight:700;
+  color:var(--accent);letter-spacing:-0.04em;line-height:1;
+}
+
+@keyframes numFlash{
+  0%{filter:brightness(2.5) drop-shadow(0 0 12px rgba(0,232,162,0.9))}
+  100%{filter:brightness(1) drop-shadow(0 0 0px transparent)}
+}
+.res-num.flash{animation:numFlash 0.5s ease-out}
+
+.res-ccy{
+  font-family:var(--fd);font-weight:500;font-size:0.9rem;
+  color:var(--text-2);margin-bottom:20px;letter-spacing:0.01em;
+}
+
+/* Rate pills row */
+.rate-pills{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  flex-wrap:wrap;
+}
+.rate-pill{
+  display:inline-flex;align-items:center;gap:6px;
+  background:rgba(22,32,48,0.8);
+  border:1px solid var(--border);
+  border-radius:100px;padding:6px 14px;
+  font-family:var(--fm);font-size:0.72rem;color:var(--text-3);
+}
+.rate-pill strong{color:var(--text-2);font-weight:600}
+.rate-pill .dot-sep{color:var(--text-3);font-size:0.55rem}
+.rate-pill.inv{background:rgba(12,17,24,0.6)}
+
+/* Refresh progress bar */
+.refresh-bar{
+  height:2px;border-radius:1px;
+  background:var(--border);margin-top:18px;overflow:hidden;
+}
+.refresh-bar-fill{
+  height:100%;width:0%;
+  background:linear-gradient(90deg,rgba(0,232,162,0.3),var(--accent));
+  border-radius:1px;
+  transition:width 1s linear;
+}
+
+/* Updated row */
+.updated-row{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  margin-top:12px;
+  font-family:var(--fm);font-size:0.65rem;color:var(--text-3);
+}
+.updated-dot{width:4px;height:4px;border-radius:50%;background:var(--accent);flex-shrink:0}
+
+.error-box{
+  background:rgba(255,79,107,0.07);border:1px solid rgba(255,79,107,0.22);
+  border-radius:10px;padding:10px 14px;
+  font-size:0.78rem;color:var(--danger);text-align:center;
+  display:none;margin-top:10px;
+}
+
+/* ══════════════════════════════════
+   POPULAR GRID
+══════════════════════════════════ */
+.sec-head{
+  display:flex;align-items:center;justify-content:space-between;
+  margin:30px 0 14px;
+}
+.sec-label{
+  font-size:0.65rem;font-weight:700;color:var(--text-3);
+  text-transform:uppercase;letter-spacing:0.12em;
+  display:flex;align-items:center;gap:8px;
+}
+.sec-label::before{
+  content:'';width:16px;height:1.5px;background:var(--accent);border-radius:1px;
+}
+.sec-sub{font-size:0.68rem;color:var(--text-3);font-family:var(--fm)}
+
+.ccy-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+}
+
+.ccy-tile{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--r2);
+  padding:14px 12px;
+  cursor:pointer;
+  transition:all 0.2s cubic-bezier(0.4,0,0.2,1);
+  display:flex;flex-direction:column;align-items:center;
+  gap:4px;text-align:center;
+  position:relative;overflow:hidden;
+}
+.ccy-tile:hover{
+  border-color:var(--accent);
+  transform:translateY(-3px);
+  box-shadow:0 10px 28px rgba(0,0,0,0.35),0 0 0 1px rgba(0,232,162,0.06);
+  background:rgba(0,232,162,0.025);
+}
+.ccy-tile.active-to{
+  border-color:var(--accent);
+  background:var(--accent-dim);
+}
+.ccy-tile.active-to::before{
+  content:'✓';
+  position:absolute;top:6px;right:8px;
+  font-size:0.55rem;color:var(--accent);
+  width:14px;height:14px;
+  background:rgba(0,232,162,0.12);
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  line-height:14px;text-align:center;
+}
+
+.t-flag{font-size:1.5rem;line-height:1}
+.t-code{font-family:var(--fd);font-weight:700;font-size:0.82rem;margin-top:2px}
+.t-val{
+  font-family:var(--fm);font-size:0.75rem;font-weight:600;
+  color:var(--accent);margin-top:2px;
+}
+.t-name{
+  font-size:0.58rem;color:var(--text-3);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  max-width:100%;
+}
+
+/* ══════════════════════════════════
+   MODAL
+══════════════════════════════════ */
+.overlay{
+  position:fixed;inset:0;
+  background:rgba(6,9,15,0.88);
+  backdrop-filter:blur(12px);
+  z-index:300;
+  display:none;align-items:flex-end;justify-content:center;
+  padding:0;
+}
+.overlay.open{display:flex;animation:fadeIn 0.18s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+.modal{
+  width:100%;max-width:480px;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--r4) var(--r4) 0 0;
+  overflow:hidden;
+  animation:slideUp 0.28s cubic-bezier(0.16,1,0.3,1);
+  max-height:88vh;
+  display:flex;flex-direction:column;
+}
+@keyframes slideUp{from{transform:translateY(100%);opacity:0.5}to{transform:translateY(0);opacity:1}}
+
+/* Drag handle */
+.modal::before{
+  content:'';display:block;
+  width:36px;height:4px;border-radius:2px;
+  background:var(--border);margin:12px auto 0;flex-shrink:0;
+}
+
+.modal-hd{
+  padding:12px 20px 0;
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:12px;flex-shrink:0;
+}
+.modal-title{
+  font-family:var(--fd);font-size:0.95rem;font-weight:600;letter-spacing:-0.01em;
+}
+.modal-close{
+  background:var(--elevated);border:1px solid var(--border);border-radius:8px;
+  width:30px;height:30px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:var(--text-2);font-size:0.9rem;transition:all 0.15s;
+}
+.modal-close:hover{background:var(--danger);border-color:var(--danger);color:#fff}
+
+/* Quick picks */
+.quick-picks{
+  padding:0 16px 10px;display:flex;flex-wrap:wrap;gap:6px;flex-shrink:0;
+}
+.qp-btn{
+  background:var(--elevated);border:1px solid var(--border);border-radius:8px;
+  padding:5px 10px;font-family:var(--fm);font-size:0.72rem;font-weight:600;
+  color:var(--text-2);cursor:pointer;transition:all 0.15s;
+  display:flex;align-items:center;gap:5px;
+}
+.qp-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+
+.modal-search{
+  margin:0 16px 10px;
+  background:var(--elevated);
+  border:1.5px solid var(--border);border-radius:10px;
+  padding:10px 14px;display:flex;align-items:center;gap:8px;
+  transition:border-color 0.2s;flex-shrink:0;
+}
+.modal-search:focus-within{border-color:var(--accent)}
+.srch-ico{color:var(--text-3);flex-shrink:0;font-size:0.85rem}
+#modal-search{
+  background:none;border:none;outline:none;
+  color:var(--text-1);font-family:var(--fb);font-size:0.88rem;width:100%;
+}
+#modal-search::placeholder{color:var(--text-3)}
+
+.modal-list{
+  overflow-y:auto;
+  padding:0 8px 20px;flex:1;
+}
+.modal-list::-webkit-scrollbar{width:3px}
+.modal-list::-webkit-scrollbar-track{background:transparent}
+.modal-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+.mi{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 12px;border-radius:10px;cursor:pointer;
+  transition:background 0.12s;
+}
+.mi:hover{background:var(--elevated)}
+.mi.sel{background:var(--accent-dim)}
+.mi-flag{font-size:1.35rem;flex-shrink:0;line-height:1}
+.mi-info{flex:1;min-width:0}
+.mi-code{font-family:var(--fd);font-weight:700;font-size:0.88rem}
+.mi-name{font-size:0.68rem;color:var(--text-3);margin-top:1px}
+.mi-right{text-align:right;flex-shrink:0}
+.mi-sym{font-family:var(--fm);font-size:0.75rem;color:var(--text-3)}
+.mi-rate{font-size:0.6rem;color:var(--text-3);margin-top:2px}
+.mi-empty{text-align:center;color:var(--text-3);font-size:0.82rem;padding:28px 16px}
+
+/* ── FOOTER ── */
+footer{
+  margin-top:36px;text-align:center;
+  font-family:var(--fm);font-size:0.63rem;color:var(--text-3);line-height:2;
+}
+footer a{color:var(--text-3);text-decoration:none;border-bottom:1px solid var(--border);padding-bottom:1px}
+footer a:hover{color:var(--accent);border-color:var(--accent)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:540px){
+  .main-card-inner{padding:18px 14px}
+  .ccy-grid{grid-template-columns:repeat(2,1fr)}
+  .res-num{font-size:2.8rem}
+  .res-sym{font-size:1.3rem}
+  .cc-avatar{width:50px;height:50px;font-size:1.5rem}
+  .cc-code{font-size:1.1rem}
+  .swap-btn{width:36px;height:36px}
+  .rate-pills{flex-direction:column;align-items:center}
+  .overlay{align-items:flex-end}
+  .modal{border-radius:var(--r4) var(--r4) 0 0}
+}
+@media(min-width:541px){
+  .overlay{align-items:center;padding:20px}
+  .modal{border-radius:var(--r4);max-height:80vh}
+  .modal::before{display:none}
+}
+
+/* ══ AMOUNT CHIPS ══ */
+.amount-chips{
+  display:flex;gap:6px;flex-wrap:wrap;
+  padding-top:10px;
+}
+.chip{
+  height:26px;padding:0 12px;
+  background:var(--elevated);border:1px solid var(--border);border-radius:100px;
+  font-family:var(--fm);font-size:0.67rem;font-weight:700;
+  color:var(--text-3);cursor:pointer;white-space:nowrap;
+  display:inline-flex;align-items:center;
+  transition:all 0.16s;letter-spacing:0.02em;
+}
+.chip:hover,.chip.hi{
+  border-color:var(--accent);color:var(--accent);
+  background:rgba(0,232,162,0.06);
+}
+
+/* ══ CC SYMBOL BADGE ══ */
+.cc-sym{
+  font-family:var(--fm);font-size:0.75rem;font-weight:700;
+  color:var(--text-3);letter-spacing:0.04em;
+  transition:color 0.2s;
+}
+.cur-card:hover .cc-sym{color:rgba(0,232,162,0.6)}
+
+/* ══ FROM/TO CARD INDICATOR ══ */
+.cur-card.is-from{
+  border-top:2px solid rgba(0,232,162,0.4);
+  background:rgba(0,232,162,0.02);
+}
+.cur-card.is-to{
+  border-top:2px solid rgba(75,158,255,0.4);
+  background:rgba(75,158,255,0.02);
+}
+
+/* ══ COPY BUTTON ══ */
+.copy-btn{
+  all:unset;display:inline-flex;align-items:center;gap:7px;
+  background:rgba(0,232,162,0.05);
+  border:1px solid rgba(0,232,162,0.16);border-radius:100px;
+  padding:8px 20px;margin-top:16px;cursor:pointer;
+  font-family:var(--fm);font-size:0.7rem;font-weight:600;
+  color:rgba(0,232,162,0.65);
+  transition:all 0.2s;
+}
+.copy-btn:hover{
+  background:rgba(0,232,162,0.1);
+  color:var(--accent);
+  box-shadow:0 0 20px rgba(0,232,162,0.12);
+  border-color:rgba(0,232,162,0.3);
+}
+.copy-btn.ok{
+  color:#06090F;background:var(--accent);border-color:var(--accent);
+}
+
+/* ══ TOAST ══ */
+.toast{
+  position:fixed;bottom:32px;left:50%;
+  transform:translateX(-50%) translateY(24px);
+  background:rgba(16,24,32,0.96);
+  border:1px solid rgba(0,232,162,0.3);
+  box-shadow:0 8px 36px rgba(0,0,0,0.6),0 0 0 1px rgba(0,232,162,0.06);
+  border-radius:100px;padding:11px 24px;
+  font-family:var(--fm);font-size:0.72rem;font-weight:600;
+  color:var(--accent);opacity:0;
+  transition:all 0.32s cubic-bezier(0.34,1.56,0.64,1);
+  pointer-events:none;z-index:600;white-space:nowrap;
+  display:flex;align-items:center;gap:8px;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ══ SWAP SVG BUTTON ══ */
+.swap-btn svg{transition:transform 0.28s cubic-bezier(0.4,0,0.2,1)}
+.swap-btn:hover svg{transform:rotate(180deg)}
+
+/* ══ ENHANCED TILE VALUES ══ */
+.ccy-tile{gap:5px}
+.t-flag{font-size:1.7rem!important}
+.t-val{font-size:0.88rem!important;font-weight:700!important;letter-spacing:-0.01em!important}
+.t-code{letter-spacing:0.01em}
+
+/* ══ RESULT NUM SLIDE ══ */
+@keyframes numSlide{
+  0%{opacity:0;transform:translateY(8px)}
+  100%{opacity:1;transform:translateY(0)}
+}
+.res-num.flash{
+  animation:numFlash 0.45s ease-out, numSlide 0.25s ease-out;
+}
+
+/* ══ INPUT FOCUS GLOW ══ */
+.amount-field:focus-within{
+  border-color:var(--accent)!important;
+  box-shadow:0 0 0 4px rgba(0,232,162,0.08),0 4px 24px rgba(0,0,0,0.4)!important;
+}
+
+/* ══ MODAL ITEM HOVER ══ */
+.mi:hover .mi-code{color:var(--accent)}
+
+/* ══ HEADER DIVIDER ACCENT ══ */
+header{
+  background:linear-gradient(to bottom,rgba(0,232,162,0.025),transparent);
+  border-radius:0 0 0 0;
+}
+
+/* ══ FOOTER STYLE ══ */
+footer{border-top:1px solid var(--border);padding-top:24px}
+
+
+/* ══ MARKET STATUS (header) ══ */
+.market-status{
+  display:flex;align-items:center;gap:5px;
+  padding:5px 10px;
+  background:var(--elevated);border:1px solid var(--border);border-radius:100px;
+}
+.mkt-item{
+  display:flex;align-items:center;gap:3px;
+  cursor:default;padding:0 3px;
+}
+.mkt-dot{
+  width:5px;height:5px;border-radius:50%;flex-shrink:0;
+  transition:all 0.3s;
+}
+.mkt-dot.open{background:#22D472;box-shadow:0 0 5px rgba(34,212,114,0.7)}
+.mkt-dot.closed{background:var(--text-3)}
+.mkt-lbl{
+  font-family:var(--fm);font-size:0.57rem;font-weight:700;
+  color:var(--text-3);letter-spacing:0.02em;
+}
+.mkt-sep{width:1px;height:10px;background:var(--border)}
+
+/* ══ RESULT ACTIONS ══ */
+.result-actions{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  margin-top:16px;flex-wrap:wrap;
+}
+.copy-btn{margin-top:0 !important}
+.share-btn{
+  all:unset;display:inline-flex;align-items:center;gap:7px;
+  background:rgba(75,158,255,0.05);
+  border:1px solid rgba(75,158,255,0.18);border-radius:100px;
+  padding:8px 18px;cursor:pointer;
+  font-family:var(--fm);font-size:0.7rem;font-weight:600;
+  color:rgba(75,158,255,0.65);
+  transition:all 0.2s;
+}
+.share-btn:hover{
+  background:rgba(75,158,255,0.1);color:var(--blue);
+  border-color:rgba(75,158,255,0.3);
+  box-shadow:0 0 18px rgba(75,158,255,0.1);
+}
+
+/* ══ FAVORITES STAR ══ */
+.fav-btn{
+  position:absolute;top:6px;right:7px;
+  background:none;border:none;cursor:pointer;
+  font-size:0.8rem;line-height:1;padding:2px;
+  color:var(--text-3);z-index:2;
+  transition:all 0.18s;
+}
+.fav-btn:hover{transform:scale(1.3)}
+.fav-btn.on{color:#FFD700;text-shadow:0 0 8px rgba(255,215,0,0.6)}
+.ccy-tile.fav-on{
+  border-color:rgba(255,215,0,0.22);
+  background:linear-gradient(135deg,rgba(255,215,0,0.02),rgba(255,215,0,0));
+}
+
+/* ══ HISTORY PANEL ══ */
+.history-wrap{margin-top:0}
+.hist-head{
+  display:flex;align-items:center;justify-content:space-between;
+  margin:22px 0 10px;
+}
+.hist-clr{
+  background:none;border:none;cursor:pointer;
+  font-family:var(--fm);font-size:0.63rem;color:var(--text-3);
+  padding:4px 10px;border-radius:8px;transition:all 0.15s;
+}
+.hist-clr:hover{color:var(--danger);background:rgba(255,79,107,0.06)}
+.hist-scroll{
+  display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;
+}
+.hist-scroll::-webkit-scrollbar{height:2px}
+.hist-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:1px}
+.hist-card{
+  flex-shrink:0;min-width:152px;
+  background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:11px 13px;cursor:pointer;
+  transition:all 0.18s;
+}
+.hist-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.3)}
+.hist-pair{
+  display:flex;align-items:center;gap:5px;
+  font-family:var(--fd);font-weight:700;font-size:0.78rem;
+  margin-bottom:5px;
+}
+.hist-arr{color:var(--text-3);font-size:0.6rem}
+.hist-val{
+  font-family:var(--fm);font-size:0.7rem;font-weight:600;
+  color:var(--accent);margin-bottom:4px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.hist-ts{font-family:var(--fm);font-size:0.58rem;color:var(--text-3)}
+
+/* ══ REGION TABS ══ */
+.region-tabs{
+  display:flex;gap:4px;
+  padding:0 16px 8px;overflow-x:auto;flex-shrink:0;
+}
+.region-tabs::-webkit-scrollbar{display:none}
+.rtab{
+  flex-shrink:0;height:24px;padding:0 11px;
+  background:var(--elevated);border:1px solid var(--border);border-radius:100px;
+  font-family:var(--fm);font-size:0.62rem;font-weight:700;
+  color:var(--text-3);cursor:pointer;transition:all 0.15s;
+}
+.rtab:hover{border-color:var(--accent);color:var(--accent)}
+.rtab.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+
+/* ══ SWAP ANIMATION ══ */
+@keyframes cardFlip{
+  0%{transform:scale(1) rotateY(0)}
+  40%{transform:scale(0.94) rotateY(8deg);opacity:0.7}
+  100%{transform:scale(1) rotateY(0)}
+}
+.cur-card.swapping{animation:cardFlip 0.35s ease}
+
+/* ══ SKELETON GRID ══ */
+.skel-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.skel-tile{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:14px;padding:18px 12px;
+  display:flex;flex-direction:column;align-items:center;gap:7px;
+}
+.skel-circle{
+  width:32px;height:32px;border-radius:50%;
+  background:linear-gradient(90deg,var(--elevated) 25%,var(--border) 50%,var(--elevated) 75%);
+  background-size:200% 100%;animation:skelPulse 1.3s ease-in-out infinite;
+}
+.skel-bar{
+  height:8px;border-radius:4px;
+  background:linear-gradient(90deg,var(--elevated) 25%,var(--border) 50%,var(--elevated) 75%);
+  background-size:200% 100%;animation:skelPulse 1.3s ease-in-out infinite;
+}
+@keyframes skelPulse{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ══ DARK TICKER BAR ══ */
+.ticker-bar{
+  width:100%;overflow:hidden;
+  background:rgba(0,232,162,0.03);
+  border-top:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+  padding:8px 0;margin-bottom:28px;
+  position:relative;
+}
+.ticker-bar::before,.ticker-bar::after{
+  content:'';position:absolute;top:0;bottom:0;width:60px;z-index:2;
+}
+.ticker-bar::before{left:0;background:linear-gradient(to right,var(--bg),transparent)}
+.ticker-bar::after{right:0;background:linear-gradient(to left,var(--bg),transparent)}
+.ticker-inner{
+  display:flex;gap:28px;width:max-content;
+  animation:tickerScroll 28s linear infinite;
+}
+.ticker-item{
+  display:flex;align-items:center;gap:6px;flex-shrink:0;
+  font-family:var(--fm);font-size:0.68rem;
+}
+.ticker-pair{color:var(--text-3);font-weight:600}
+.ticker-val{color:var(--text-2);font-weight:700}
+.ticker-up{color:#22D472}
+.ticker-dn{color:var(--danger)}
+@keyframes tickerScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+/* ══ MOBILE STICKY BOTTOM ══ */
+@media(max-width:540px){
+  .skel-grid{grid-template-columns:repeat(2,1fr)}
+  .market-status{display:none}
+  .hist-card{min-width:135px}
+  .ticker-bar{display:none}
+}
+
+</style>
+</head>
+<body>
+
+<div class="bg-blob bg-blob-1"></div>
+<div class="bg-blob bg-blob-2"></div>
+<div class="bg-grid"></div>
+
+<div class="page">
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-mark">💱</div>
+    <div>
+      <div class="logo-name">FX<b>Convert</b></div>
+      <div style="font-size:0.6rem;color:var(--text-3);font-family:var(--fm);letter-spacing:0.04em;margin-top:1px">50+ mata uang · real-time</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <div class="market-status" id="market-status"></div>
+    <div class="live-badge"><span class="pulse"></span>Live Rates</div>
+    <button class="icon-btn" id="refresh-btn" onclick="manualRefresh()" title="Perbarui kurs">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+      </svg>
+    </button>
+  </div>
+</header>
+
+<!-- TICKER -->
+<div class="ticker-bar"><div class="ticker-inner" id="ticker-inner"></div></div>
+
+<!-- CONVERTER CARD -->
+<div class="main-card">
+<div class="main-card-inner">
+
+  <!-- Amount input -->
+  <div class="input-section">
+    <div class="field-label">Masukkan Jumlah</div>
+    <div class="amount-field">
+      <span class="amt-prefix" id="from-symbol">$</span>
+      <input type="number" id="amount-input" value="1" min="0" step="any" placeholder="0" autocomplete="off" inputmode="decimal">
+      <button class="amt-clear" id="clear-btn" onclick="clearAmount()">✕</button>
+    </div>
+    <div class="amount-chips">
+      <button class="chip" onclick="setAmt(1)">1</button>
+      <button class="chip" onclick="setAmt(100)">100</button>
+      <button class="chip" onclick="setAmt(1000)">1.000</button>
+      <button class="chip" onclick="setAmt(10000)">10.000</button>
+      <button class="chip" onclick="setAmt(100000)">100K</button>
+      <button class="chip" onclick="setAmt(1000000)">1 Juta</button>
+    </div>
+  </div>
+
+  <!-- Currency pair -->
+  <div class="pair-row">
+
+    <div class="cur-card is-from" id="from-card" onclick="openModal('from')">
+      <div class="cc-top">
+        <span class="cc-lbl">Dari</span>
+        <span class="cc-chevron">▾</span>
+      </div>
+      <div class="cc-avatar"><span id="from-flag">🇺🇸</span></div>
+      <div class="cc-code" id="from-code">USD</div>
+      <div class="cc-name" id="from-name">US Dollar</div>
+      <div class="cc-sym" id="from-sym">$</div>
+    </div>
+
+    <div class="swap-zone">
+      <div class="swap-line"></div>
+      <button class="swap-btn" onclick="swapCurrencies()" title="Tukar mata uang">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M7 16V4m0 0L3 8m4-4 4 4"/><path d="M17 8v12m0 0 4-4m-4 4-4-4"/>
+        </svg>
+      </button>
+      <div class="swap-line"></div>
+    </div>
+
+    <div class="cur-card is-to" id="to-card" onclick="openModal('to')">
+      <div class="cc-top">
+        <span class="cc-lbl">Ke</span>
+        <span class="cc-chevron">▾</span>
+      </div>
+      <div class="cc-avatar"><span id="to-flag">🇮🇩</span></div>
+      <div class="cc-code" id="to-code">IDR</div>
+      <div class="cc-name" id="to-name">Indonesian Rupiah</div>
+      <div class="cc-sym" id="to-sym">Rp</div>
+    </div>
+
+  </div>
+
+  <!-- Result hero -->
+  <div class="result-wrap" id="result-wrap">
+  <div class="result-inner">
+    <div class="res-from-label">
+      <span class="from-pill" id="result-eq">1 USD</span>
+      <span style="opacity:0.5">setara dengan</span>
+    </div>
+    <div class="res-output">
+      <span class="res-sym" id="res-symbol">Rp</span>
+      <span class="res-num" id="result-num">—</span>
+    </div>
+    <div class="res-ccy" id="result-ccy">IDR · Indonesian Rupiah</div>
+    <div class="rate-pills">
+      <div class="rate-pill"><span id="rate-line-text">Memuat kurs...</span></div>
+      <div class="rate-pill inv" id="inv-rate"></div>
+    </div>
+    <div class="result-actions">
+      <button class="copy-btn" id="copy-btn" onclick="copyResult()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+        Salin
+      </button>
+      <button class="share-btn" onclick="shareResult()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+        </svg>
+        Bagikan
+      </button>
+    </div>
+    <div class="refresh-bar" style="margin-top:14px"><div class="refresh-bar-fill" id="rfill"></div></div>
+  </div>
+  </div>
+
+  <div class="error-box" id="error-box"></div>
+  <div class="updated-row" id="updated-row">
+    <div style="width:12px;height:12px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:rot 0.75s linear infinite;flex-shrink:0"></div>
+    Memuat data kurs terkini...
+  </div>
+
+</div><!-- /main-card-inner -->
+</div><!-- /main-card -->
+
+<!-- HISTORY -->
+<div class="history-wrap" id="history-wrap" style="display:none">
+  <div class="hist-head">
+    <span class="sec-label">Riwayat Konversi</span>
+    <button class="hist-clr" onclick="clearHistory()">Hapus semua</button>
+  </div>
+  <div class="hist-scroll" id="hist-scroll"></div>
+</div>
+
+<!-- POPULAR GRID -->
+<div class="sec-head">
+  <span class="sec-label">Konversi Populer</span>
+  <span class="sec-sub" id="grid-base-label">dari 1 USD</span>
+</div>
+<div class="ccy-grid" id="ccy-grid"></div>
+
+</div><!-- /page -->
+
+<footer>
+  Sumber: <a href="https://github.com/fawazahmed0/exchange-api" target="_blank">ExchangeRate API</a> &amp; <a href="https://frankfurter.dev" target="_blank">Frankfurter/ECB</a>
+  &nbsp;·&nbsp; Auto-refresh setiap 5 menit &nbsp;·&nbsp; Hanya untuk referensi
+</footer>
+
+<!-- MODAL -->
+<div class="overlay" id="overlay" onclick="overlayClick(event)">
+  <div class="modal">
+    <div class="modal-hd">
+      <span class="modal-title" id="modal-title">Pilih Mata Uang</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="region-tabs">
+      <button class="rtab active" onclick="setRegion('all',this)">Semua</button>
+      <button class="rtab" onclick="setRegion('asia',this)">🌏 Asia</button>
+      <button class="rtab" onclick="setRegion('europe',this)">🌍 Eropa</button>
+      <button class="rtab" onclick="setRegion('americas',this)">🌎 Amerika</button>
+      <button class="rtab" onclick="setRegion('mid',this)">🕌 Timteng</button>
+      <button class="rtab" onclick="setRegion('oceania',this)">🌊 Oseania</button>
+    </div>
+    <div class="quick-picks" id="quick-picks"></div>
+    <div class="modal-search">
+      <span class="srch-ico">🔍</span>
+      <input type="text" id="modal-search" placeholder="Cari kode atau nama (USD, Euro, Rupiah...)" oninput="filterList(this.value)" autocomplete="off">
+    </div>
+    <div class="modal-list" id="modal-list"></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════
+//  DATA
+// ══════════════════════════════════════
+const CCY = {
+  USD:{name:"US Dollar",         flag:"🇺🇸", sym:"$"},
+  EUR:{name:"Euro",              flag:"🇪🇺", sym:"€"},
+  GBP:{name:"British Pound",     flag:"🇬🇧", sym:"£"},
+  JPY:{name:"Japanese Yen",      flag:"🇯🇵", sym:"¥"},
+  IDR:{name:"Indonesian Rupiah", flag:"🇮🇩", sym:"Rp"},
+  SGD:{name:"Singapore Dollar",  flag:"🇸🇬", sym:"S$"},
+  MYR:{name:"Malaysian Ringgit", flag:"🇲🇾", sym:"RM"},
+  CNY:{name:"Chinese Yuan",      flag:"🇨🇳", sym:"¥"},
+  AUD:{name:"Australian Dollar", flag:"🇦🇺", sym:"A$"},
+  CAD:{name:"Canadian Dollar",   flag:"🇨🇦", sym:"C$"},
+  CHF:{name:"Swiss Franc",       flag:"🇨🇭", sym:"Fr"},
+  KRW:{name:"South Korean Won",  flag:"🇰🇷", sym:"₩"},
+  THB:{name:"Thai Baht",         flag:"🇹🇭", sym:"฿"},
+  HKD:{name:"Hong Kong Dollar",  flag:"🇭🇰", sym:"HK$"},
+  INR:{name:"Indian Rupee",      flag:"🇮🇳", sym:"₹"},
+  PHP:{name:"Philippine Peso",   flag:"🇵🇭", sym:"₱"},
+  SAR:{name:"Saudi Riyal",       flag:"🇸🇦", sym:"﷼"},
+  AED:{name:"UAE Dirham",        flag:"🇦🇪", sym:"د.إ"},
+  NZD:{name:"New Zealand Dollar",flag:"🇳🇿", sym:"NZ$"},
+  BRL:{name:"Brazilian Real",    flag:"🇧🇷", sym:"R$"},
+  MXN:{name:"Mexican Peso",      flag:"🇲🇽", sym:"$"},
+  ZAR:{name:"S. African Rand",   flag:"🇿🇦", sym:"R"},
+  NOK:{name:"Norwegian Krone",   flag:"🇳🇴", sym:"kr"},
+  SEK:{name:"Swedish Krona",     flag:"🇸🇪", sym:"kr"},
+  DKK:{name:"Danish Krone",      flag:"🇩🇰", sym:"kr"},
+  TRY:{name:"Turkish Lira",      flag:"🇹🇷", sym:"₺"},
+  PLN:{name:"Polish Zloty",      flag:"🇵🇱", sym:"zł"},
+  CZK:{name:"Czech Koruna",      flag:"🇨🇿", sym:"Kč"},
+  HUF:{name:"Hungarian Forint",  flag:"🇭🇺", sym:"Ft"},
+  PKR:{name:"Pakistani Rupee",   flag:"🇵🇰", sym:"₨"},
+  BDT:{name:"Bangladeshi Taka",  flag:"🇧🇩", sym:"৳"},
+  VND:{name:"Vietnamese Dong",   flag:"🇻🇳", sym:"₫"},
+  EGP:{name:"Egyptian Pound",    flag:"🇪🇬", sym:"£"},
+  TWD:{name:"Taiwan Dollar",     flag:"🇹🇼", sym:"NT$"},
+  NGN:{name:"Nigerian Naira",    flag:"🇳🇬", sym:"₦"},
+  RUB:{name:"Russian Ruble",     flag:"🇷🇺", sym:"₽"},
+  QAR:{name:"Qatari Riyal",      flag:"🇶🇦", sym:"﷼"},
+  KWD:{name:"Kuwaiti Dinar",     flag:"🇰🇼", sym:"د.ك"},
+  BHD:{name:"Bahraini Dinar",    flag:"🇧🇭", sym:"BD"},
+  OMR:{name:"Omani Rial",        flag:"🇴🇲", sym:"﷼"},
+  JOD:{name:"Jordanian Dinar",   flag:"🇯🇴", sym:"JD"},
+  MAD:{name:"Moroccan Dirham",   flag:"🇲🇦", sym:"MAD"},
+  ILS:{name:"Israeli Shekel",    flag:"🇮🇱", sym:"₪"},
+  CLP:{name:"Chilean Peso",      flag:"🇨🇱", sym:"$"},
+  COP:{name:"Colombian Peso",    flag:"🇨🇴", sym:"$"},
+  PEN:{name:"Peruvian Sol",      flag:"🇵🇪", sym:"S/"},
+  RON:{name:"Romanian Leu",      flag:"🇷🇴", sym:"lei"},
+  HRK:{name:"Croatian Kuna",     flag:"🇭🇷", sym:"kn"},
+  BGN:{name:"Bulgarian Lev",     flag:"🇧🇬", sym:"лв"},
+  ISK:{name:"Icelandic Króna",   flag:"🇮🇸", sym:"kr"},
+};
+
+const POPULAR = ["EUR","GBP","JPY","SGD","MYR","AUD","CNY","KRW","HKD","THB","INR","PHP","IDR","AED","SAR","CHF","CAD","TWD","NZD","VND"];
+const QUICK   = ["USD","EUR","GBP","JPY","IDR","SGD","MYR","AUD","CNY","CHF","AED","KRW"];
+
+// ══════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════
+let rates = {};
+let fromCCY = "USD";
+let toCCY   = "IDR";
+let modalTarget = null;
+let ratesDate = "";
+let ratesSource = "";
+let refreshTimer = null;
+let countdown = 300;
+let favorites = new Set(JSON.parse(localStorage.getItem("fx-favs")||"[]"));
+let convHistory = [];
+let activeRegion = "all";
+
+// ══════════════════════════════════════
+//  FETCH RATES
+// ══════════════════════════════════════
+async function fetchRates(showSpinner=false){
+  if(showSpinner) setSpinning(true);
+  const base = fromCCY.toLowerCase();
+  const primary = `https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/${base}.json`;
+  const fallback = `https://api.frankfurter.app/latest?from=${fromCCY}`;
+  let ok = false;
+
+  try{
+    const res = await fetch(primary,{cache:"no-store"});
+    if(!res.ok) throw new Error("primary fail");
+    const data = await res.json();
+    rates = data[base] || {};
+    rates[base] = 1;
+    ratesDate = data.date || new Date().toISOString().slice(0,10);
+    ratesSource = "ExchangeRate API";
+    ok = true;
+  }catch(_){
+    try{
+      const res = await fetch(fallback);
+      if(!res.ok) throw new Error("fallback fail");
+      const data = await res.json();
+      rates = {};
+      for(const [k,v] of Object.entries(data.rates||{})) rates[k.toLowerCase()] = v;
+      rates[fromCCY.toLowerCase()] = 1;
+      ratesDate = data.date || new Date().toISOString().slice(0,10);
+      ratesSource = "Frankfurter (ECB)";
+      ok = true;
+    }catch(e2){
+      console.error(e2);
+      showErr("Gagal memuat kurs. Periksa koneksi internet Anda.");
+    }
+  }
+
+  setSpinning(false);
+  if(ok){
+    hideErr();
+    setUpdated();
+    render();
+    renderGrid();
+    countdown = 300;
+  }
+}
+
+function getRate(fromCode, toCode){
+  if(fromCode === toCode) return 1;
+  return rates[toCode.toLowerCase()] ?? null;
+}
+
+// ══════════════════════════════════════
+//  FORMAT
+// ══════════════════════════════════════
+const ZERO_DECIMAL = new Set(["IDR","JPY","KRW","VND","HUF","CLP","COP","NGN","BDT","PKR"]);
+
+function fmtAmount(val, code){
+  if(val === null || isNaN(val)) return "—";
+  if(ZERO_DECIMAL.has(code)) return new Intl.NumberFormat("id-ID",{maximumFractionDigits:0}).format(val);
+  const abs = Math.abs(val);
+  if(abs < 0.001) return val.toFixed(8).replace(/\.?0+$/,"");
+  if(abs < 0.1)   return val.toFixed(6).replace(/\.?0+$/,"");
+  if(abs < 1)     return val.toFixed(5).replace(/\.?0+$/,"");
+  return new Intl.NumberFormat("en-US",{minimumFractionDigits:2,maximumFractionDigits:4}).format(val);
+}
+
+function fmtRate(val, code){
+  if(ZERO_DECIMAL.has(code)) return new Intl.NumberFormat("en-US",{maximumFractionDigits:0}).format(val);
+  const abs = Math.abs(val);
+  if(abs < 0.001) return val.toFixed(8).replace(/\.?0+$/,"");
+  if(abs < 1)     return val.toFixed(6).replace(/\.?0+$/,"");
+  return val.toFixed(4);
+}
+
+// ══════════════════════════════════════
+//  RENDER
+// ══════════════════════════════════════
+function render(){
+  const amount = parseFloat(document.getElementById("amount-input").value) || 0;
+  const rate   = getRate(fromCCY, toCCY);
+  const toDef  = CCY[toCCY] || {name:toCCY,sym:"",flag:"🏳️"};
+
+  document.getElementById("result-eq").textContent = `${fmtAmount(amount,fromCCY)} ${fromCCY}`;
+  document.getElementById("res-symbol").textContent = toDef.sym;
+
+  const numEl = document.getElementById("result-num");
+  if(rate === null){
+    numEl.textContent = "N/A";
+    document.getElementById("rate-line-text").textContent = "Kurs tidak tersedia";
+    document.getElementById("inv-rate").innerHTML = "";
+    return;
+  }
+
+  const converted = amount * rate;
+
+  // Flash the result
+  numEl.classList.remove("flash");
+  void numEl.offsetWidth;
+  numEl.textContent = fmtAmount(converted, toCCY);
+  numEl.classList.add("flash");
+
+  // Glow ring on update
+  const wrap = document.getElementById("result-wrap");
+  wrap.classList.remove("lit");
+  void wrap.offsetWidth;
+  wrap.classList.add("lit");
+
+  document.getElementById("result-ccy").textContent = `${toCCY} · ${toDef.name}`;
+  document.getElementById("rate-line-text").innerHTML =
+    `1 ${fromCCY} &nbsp;=&nbsp; <strong>${fmtRate(rate,toCCY)} ${toCCY}</strong>`;
+
+  const inv = rate !== 0 ? 1/rate : 0;
+  document.getElementById("inv-rate").innerHTML =
+    `1 ${toCCY} &nbsp;=&nbsp; <strong>${fmtRate(inv,fromCCY)} ${fromCCY}</strong>`;
+
+  // Push to history
+  pushHistory(fromCCY, toCCY, amount, converted);
+}
+
+function renderGrid(){
+  const amount = parseFloat(document.getElementById("amount-input").value) || 1;
+  const grid = document.getElementById("ccy-grid");
+  document.getElementById("grid-base-label").textContent =
+    `dari ${fmtAmount(amount,fromCCY)} ${fromCCY}`;
+
+  // Sort: favorites first
+  const list = POPULAR.filter(c=>c!==fromCCY);
+  list.sort((a,b)=>(favorites.has(b)?1:0)-(favorites.has(a)?1:0));
+
+  // Skeleton while loading
+  if(!Object.keys(rates).length){
+    grid.innerHTML = `<div class="skel-grid">${Array(8).fill(`
+      <div class="skel-tile">
+        <div class="skel-circle"></div>
+        <div class="skel-bar" style="width:36px"></div>
+        <div class="skel-bar" style="width:56px"></div>
+      </div>`).join("")}</div>`;
+    return;
+  }
+
+  grid.innerHTML = "";
+  list.forEach(code=>{
+    const def  = CCY[code]; if(!def) return;
+    const rate = getRate(fromCCY, code);
+    const isFav = favorites.has(code);
+    const tile = document.createElement("div");
+    tile.className = "ccy-tile"+(code===toCCY?" active-to":"")+(isFav?" fav-on":"");
+    tile.innerHTML = `
+      <button class="fav-btn${isFav?" on":""}" title="${isFav?"Hapus favorit":"Tambah favorit"}"
+        onclick="toggleFav('${code}',event)">${isFav?"★":"☆"}</button>
+      <span class="t-flag">${def.flag}</span>
+      <span class="t-code">${code}</span>
+      <span class="t-val">${rate!==null ? fmtAmount(amount*rate,code) : "N/A"}</span>
+      <span class="t-name">${def.sym} · ${def.name}</span>
+    `;
+    tile.onclick = ()=>{ toCCY=code; updateToUI(); render(); renderGrid(); };
+    grid.appendChild(tile);
+  });
+}
+
+// ══════════════════════════════════════
+//  UI HELPERS
+// ══════════════════════════════════════
+function updateFromUI(){
+  const d = CCY[fromCCY]||{flag:"🏳️",name:"—",sym:""};
+  document.getElementById("from-flag").textContent = d.flag;
+  document.getElementById("from-code").textContent = fromCCY;
+  document.getElementById("from-name").textContent = d.name;
+  document.getElementById("from-sym").textContent  = d.sym;
+  document.getElementById("from-symbol").textContent = d.sym;
+  document.getElementById("grid-base-label").textContent = `dari 1 ${fromCCY}`;
+}
+function updateToUI(){
+  const d = CCY[toCCY]||{flag:"🏳️",name:"—",sym:""};
+  document.getElementById("to-flag").textContent = d.flag;
+  document.getElementById("to-code").textContent = toCCY;
+  document.getElementById("to-name").textContent = d.name;
+  document.getElementById("to-sym").textContent  = d.sym;
+}
+
+function setUpdated(){
+  document.getElementById("updated-row").innerHTML =
+    `<div class="updated-dot"></div> Diperbarui: ${ratesDate} &nbsp;·&nbsp; ${ratesSource} &nbsp;·&nbsp; refresh dalam <span id="cd">5:00</span>`;
+  buildTicker();
+}
+
+function setSpinning(on){
+  document.getElementById("refresh-btn").classList.toggle("spin",on);
+}
+function showErr(msg){
+  const el = document.getElementById("error-box");
+  el.textContent = "⚠ "+msg; el.style.display="block";
+}
+function hideErr(){ document.getElementById("error-box").style.display="none"; }
+
+// Countdown + progress bar
+setInterval(()=>{
+  countdown = Math.max(0, countdown-1);
+  const pct = ((300-countdown)/300)*100;
+  const fill = document.getElementById("rfill");
+  if(fill) fill.style.width = pct+"%";
+  const cdEl = document.getElementById("cd");
+  if(cdEl){
+    const m = Math.floor(countdown/60);
+    const s = countdown%60;
+    cdEl.textContent = `${m}:${s.toString().padStart(2,"0")}`;
+  }
+}, 1000);
+
+// ══════════════════════════════════════
+//  INTERACTIONS
+// ══════════════════════════════════════
+function setAmt(n){
+  const inp = document.getElementById("amount-input");
+  inp.value = n;
+  document.getElementById("clear-btn").classList.add("on");
+  document.querySelectorAll(".chip").forEach(c=>{
+    c.classList.toggle("hi", parseFloat(c.dataset.val||c.textContent.replace(/[^0-9]/g,""))==n);
+  });
+  render(); renderGrid();
+}
+
+function copyResult(){
+  const num  = document.getElementById("result-num").textContent;
+  const sym  = document.getElementById("res-symbol").textContent;
+  const amt  = document.getElementById("amount-input").value||"1";
+  const text = `${amt} ${fromCCY} = ${sym}${num} ${toCCY}`;
+  navigator.clipboard.writeText(text).then(()=>{
+    showToast("✓  Disalin ke clipboard");
+    const btn = document.getElementById("copy-btn");
+    btn.classList.add("ok");
+    setTimeout(()=>btn.classList.remove("ok"),2200);
+  }).catch(()=>showToast("⚠  Gagal menyalin"));
+}
+
+function showToast(msg){
+  const t = document.getElementById("toast");
+  t.innerHTML = msg;
+  t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),2600);
+}
+
+function swapCurrencies(){
+  // Animate cards
+  ["from-card","to-card"].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el){ el.classList.remove("swapping"); void el.offsetWidth; el.classList.add("swapping"); }
+  });
+  [fromCCY,toCCY] = [toCCY,fromCCY];
+  updateFromUI(); updateToUI();
+  fetchRates(true);
+}
+
+function clearAmount(){
+  document.getElementById("amount-input").value="";
+  document.getElementById("amount-input").focus();
+  document.getElementById("clear-btn").classList.remove("on");
+  render(); renderGrid();
+}
+
+function manualRefresh(){ fetchRates(true); }
+
+document.getElementById("amount-input").addEventListener("input",function(){
+  document.getElementById("clear-btn").classList.toggle("on", this.value.length>0);
+  render(); renderGrid();
+});
+document.getElementById("amount-input").addEventListener("keydown",function(e){
+  if(e.key==="-"||e.key==="e") e.preventDefault();
+});
+
+// ══════════════════════════════════════
+//  MODAL
+// ══════════════════════════════════════
+function openModal(target){
+  modalTarget = target;
+  document.getElementById("modal-title").textContent =
+    target==="from" ? "Pilih Mata Uang Asal" : "Pilih Mata Uang Tujuan";
+  document.getElementById("modal-search").value = "";
+  buildQuickPicks();
+  buildModalList("");
+  document.getElementById("overlay").classList.add("open");
+  setTimeout(()=>document.getElementById("modal-search").focus(),150);
+}
+
+function buildQuickPicks(){
+  const qp = document.getElementById("quick-picks");
+  qp.innerHTML = QUICK.map(code=>{
+    const d = CCY[code];
+    return `<button class="qp-btn" onclick="pickCurrency('${code}')">${d.flag} ${code}</button>`;
+  }).join("");
+}
+
+function closeModal(){ document.getElementById("overlay").classList.remove("open"); }
+
+function overlayClick(e){
+  if(e.target===document.getElementById("overlay")) closeModal();
+}
+document.addEventListener("keydown",e=>{if(e.key==="Escape") closeModal();});
+
+function buildModalList(q){
+  const listEl = document.getElementById("modal-list");
+  const lower = q.toLowerCase().trim();
+  const entries = Object.entries(CCY).filter(([code,info])=>{
+    const regionOk = activeRegion==="all" || (REGION_MAP[activeRegion]||[]).includes(code);
+    if(!regionOk) return false;
+    if(!lower) return true;
+    return code.toLowerCase().includes(lower)||info.name.toLowerCase().includes(lower);
+  });
+
+  if(!entries.length){
+    listEl.innerHTML = `<div class="mi-empty">Tidak ditemukan. Coba kode lain (misal: USD, EUR)</div>`;
+    return;
+  }
+
+  listEl.innerHTML = entries.map(([code,info])=>{
+    const sel = (modalTarget==="from"&&code===fromCCY)||(modalTarget==="to"&&code===toCCY);
+    const rate = getRate(modalTarget==="from"?code:fromCCY, modalTarget==="from"?fromCCY:code);
+    const rateStr = (rate!==null && !isNaN(rate))
+      ? `1 ${code} = ${fmtRate(rate, modalTarget==="from"?fromCCY:code)} ${modalTarget==="from"?fromCCY:code}` : "";
+    return `
+      <div class="mi${sel?" sel":""}" onclick="pickCurrency('${code}')">
+        <span class="mi-flag">${info.flag}</span>
+        <div class="mi-info">
+          <div class="mi-code">${code}</div>
+          <div class="mi-name">${info.name}</div>
+        </div>
+        <div class="mi-right">
+          <div class="mi-sym">${info.sym}</div>
+          <div class="mi-rate">${rateStr}</div>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function filterList(val){ buildModalList(val); }
+
+function pickCurrency(code){
+  if(modalTarget==="from"){
+    if(code===toCCY) toCCY = fromCCY;
+    fromCCY = code;
+    updateFromUI(); updateToUI();
+    fetchRates(true);
+  } else {
+    toCCY = code;
+    updateToUI();
+    render(); renderGrid();
+  }
+  closeModal();
+}
+
+// ══════════════════════════════════════
+//  FAVORITES
+// ══════════════════════════════════════
+function toggleFav(code, e){
+  e.stopPropagation();
+  if(favorites.has(code)) favorites.delete(code);
+  else favorites.add(code);
+  localStorage.setItem("fx-favs", JSON.stringify([...favorites]));
+  renderGrid();
+  showToast(favorites.has(code) ? `⭐ ${code} ditambah ke favorit` : `${code} dihapus dari favorit`);
+}
+
+// ══════════════════════════════════════
+//  HISTORY
+// ══════════════════════════════════════
+function pushHistory(from, to, amount, result){
+  if(!amount || amount <= 0) return;
+  // Debounce — don't add if same as last
+  const last = convHistory[0];
+  if(last && last.from===from && last.to===to && last.amount===amount) return;
+  convHistory.unshift({from, to, amount, result, ts: Date.now()});
+  if(convHistory.length > 8) convHistory.pop();
+  renderHistory();
+}
+
+function renderHistory(){
+  const wrap = document.getElementById("history-wrap");
+  const scroll = document.getElementById("hist-scroll");
+  if(!convHistory.length){ wrap.style.display="none"; return; }
+  wrap.style.display="";
+  scroll.innerHTML = convHistory.map((h,i)=>{
+    const fd = CCY[h.from]||{flag:"",name:h.from};
+    const td = CCY[h.to]  ||{flag:"",name:h.to};
+    return `<div class="hist-card" onclick="replayHist(${i})">
+      <div class="hist-pair">
+        <span>${fd.flag}</span><span>${h.from}</span>
+        <span class="hist-arr">→</span>
+        <span>${td.flag}</span><span>${h.to}</span>
+      </div>
+      <div class="hist-val">${fmtAmount(h.amount,h.from)} → ${fmtAmount(h.result,h.to)}</div>
+      <div class="hist-ts">${timeAgo(h.ts)}</div>
+    </div>`;
+  }).join("");
+}
+
+function replayHist(i){
+  const h = convHistory[i]; if(!h) return;
+  fromCCY = h.from; toCCY = h.to;
+  document.getElementById("amount-input").value = h.amount;
+  document.getElementById("clear-btn").classList.add("on");
+  updateFromUI(); updateToUI();
+  fetchRates(true);
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function clearHistory(){
+  convHistory = [];
+  renderHistory();
+}
+
+function timeAgo(ts){
+  const s = Math.floor((Date.now()-ts)/1000);
+  if(s<60) return "baru saja";
+  if(s<3600) return Math.floor(s/60)+"m lalu";
+  return Math.floor(s/3600)+"j lalu";
+}
+
+// ══════════════════════════════════════
+//  SHARE
+// ══════════════════════════════════════
+function shareResult(){
+  const num = document.getElementById("result-num").textContent;
+  const sym = document.getElementById("res-symbol").textContent;
+  const amt = document.getElementById("amount-input").value||"1";
+  const text = `💱 ${amt} ${fromCCY} = ${sym}${num} ${toCCY}\n📊 Kurs real-time via FXConvert`;
+  if(navigator.share){
+    navigator.share({title:"FXConvert",text}).catch(()=>{});
+  } else {
+    navigator.clipboard.writeText(text)
+      .then(()=>showToast("📋 Format berbagi disalin!"))
+      .catch(()=>showToast("⚠ Gagal menyalin"));
+  }
+}
+
+// ══════════════════════════════════════
+//  MARKET STATUS
+// ══════════════════════════════════════
+function updateMarketStatus(){
+  const el = document.getElementById("market-status"); if(!el) return;
+  const now = new Date();
+  const utcH = now.getUTCHours(), utcM = now.getUTCMinutes();
+  const day = now.getUTCDay();
+  const t = utcH*60+utcM;
+  const wd = day>=1 && day<=5; // Mon-Fri
+
+  const mkts = [
+    {n:"NY",  open: wd && t>=1330 && t<2000},
+    {n:"LON", open: wd && t>=800  && t<1630},
+    {n:"TYO", open: wd && t<630},  // 00:00-06:30 UTC = 09:00-15:30 JST
+    {n:"SGX", open: wd && t>=100  && t<900 },
+  ];
+
+  el.innerHTML = mkts.map((m,i)=>`
+    ${i>0?'<div class="mkt-sep"></div>':''}
+    <div class="mkt-item" title="${m.n} ${m.open?'Buka':'Tutup'}">
+      <div class="mkt-dot ${m.open?'open':'closed'}"></div>
+      <span class="mkt-lbl">${m.n}</span>
+    </div>`).join("");
+}
+setInterval(updateMarketStatus, 30000);
+
+// ══════════════════════════════════════
+//  TICKER BAR
+// ══════════════════════════════════════
+function buildTicker(){
+  const el = document.getElementById("ticker-inner"); if(!el) return;
+  const pairs = [
+    ["USD","EUR"],["USD","IDR"],["USD","JPY"],["USD","GBP"],
+    ["USD","SGD"],["USD","MYR"],["EUR","IDR"],["GBP","IDR"],
+    ["USD","AUD"],["USD","CHF"],["USD","CNY"],["USD","KRW"],
+  ];
+  let content = pairs.map(([f,t])=>{
+    const r = getRate(f,t);
+    if(!r) return "";
+    const up = r>1;
+    return `<div class="ticker-item">
+      <span class="ticker-pair">${f}/${t}</span>
+      <span class="ticker-val">${fmtRate(r,t)}</span>
+      <span class="${up?'ticker-up':'ticker-dn'}">${up?"▲":"▼"}</span>
+    </div>`;
+  }).filter(Boolean).join("");
+  // Duplicate for seamless loop
+  el.innerHTML = content + content;
+}
+
+// ══════════════════════════════════════
+//  REGION FILTER
+// ══════════════════════════════════════
+const REGION_MAP = {
+  asia:    ["JPY","CNY","KRW","HKD","SGD","MYR","THB","IDR","PHP","INR","TWD","VND","BDT","PKR"],
+  europe:  ["EUR","GBP","CHF","SEK","NOK","DKK","PLN","CZK","HUF","TRY","RUB","RON","HRK","BGN","ISK"],
+  americas:["USD","CAD","MXN","BRL","CLP","COP","PEN"],
+  mid:     ["SAR","AED","QAR","KWD","BHD","OMR","JOD","MAD","ILS","EGP"],
+  oceania: ["AUD","NZD","ZAR","NGN"],
+};
+
+function setRegion(r, btn){
+  activeRegion = r;
+  document.querySelectorAll(".rtab").forEach(b=>b.classList.remove("active"));
+  if(btn) btn.classList.add("active");
+  buildModalList(document.getElementById("modal-search").value||"");
+}
+
+// ══════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════
+updateFromUI();
+updateToUI();
+fetchRates();
+updateMarketStatus();
+
+refreshTimer = setInterval(()=>fetchRates(), 5*60*1000);
+</script>
+<div class="toast" id="toast"></div>
+</body>
+</html>
